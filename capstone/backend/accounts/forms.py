@@ -1,4 +1,4 @@
-
+# accounts/forms.py
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from .models import Usuario
@@ -10,4 +10,5 @@ class UsuarioCreationForm(UserCreationForm):
     """
     class Meta:
         model = Usuario
+        # Se elimina el campo 'rol' porque ahora se gestiona con Grupos de Django.
         fields = ('username', 'first_name', 'last_name', 'email', 'rut', 'telefono')

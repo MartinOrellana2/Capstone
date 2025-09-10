@@ -1,4 +1,6 @@
-
+/* Este es el archivo de módulo CSS que contiene los estilos locales para tu componente LoginPage.
+  Los estilos aquí solo se aplicarán a los elementos que los importen.
+*/
 
 * {
     margin: 0;
@@ -8,7 +10,7 @@
 }
 
 body {
-
+    /* No definimos el fondo aquí para que no afecte a todas las páginas */
     font-family: 'Roboto', sans-serif;
 }
 
@@ -17,6 +19,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    /* El fondo ahora es parte de este contenedor específico */
     background-image: url(src/assets/img2.jpg);
     background-position: center;
     background-repeat: no-repeat;

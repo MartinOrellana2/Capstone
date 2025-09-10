@@ -33,7 +33,7 @@ export default function ResetPasswordPage() {
   };
 
   return (
-
+    // Usa la clase del módulo CSS para el contenedor principal
     <div className={styles.containerFormWrapper}>
       <div className={`${styles.containerForm} ${styles.signIn} ${styles.active}`}>
         <form className={styles.formulario} onSubmit={handleReset}>

@@ -1,71 +1,106 @@
-import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
-import { useUserStore } from '../../store/authStore';
+import React from 'react';
+import { NavLink, useNavigate, Outlet } from 'react-router-dom';
+import { useUserStore } from '../../store/authStore.js';
+import styles from '../../css/mainlayout.module.css'; // ¡Importamos nuestro CSS!
 
-export default function MainLayout({ children }) {
-    const { user } = useUserStore();
-    const [isComponentsOpen, setIsComponentsOpen] = useState(false);
+// Centralizamos la definición de los enlaces de navegación por rol
+const navLinksByRole = {
+  'Supervisor': [
+    { to: '/dashboard', label: 'Inicio', icon: 'fas fa-home' },
+    { to: '/vehiculos', label: 'Gestionar Vehículos', icon: 'fas fa-truck' },
+    { to: '/usuarios', label: 'Gestionar Usuarios', icon: 'fas fa-users-cog' },
+    { to: '/agenda', label: 'Agenda Taller', icon: 'fas fa-calendar-alt' },
+  ],
+  'Chofer': [
+    { to: '/dashboard', label: 'Mi Estado', icon: 'fas fa-road' },
+    // 👇 Se añade el enlace a la agenda para el Chofer
+    { to: '/agenda', label: 'Agendar Ingreso', icon: 'fas fa-calendar-plus' },
+  ],
+  'Mecanico': [
+    { to: '/dashboard', label: 'Tareas Asignadas', icon: 'fas fa-tasks' },
+    // 👇 También es útil que el Mecánico vea la agenda
+    { to: '/agenda', label: 'Ver Agenda', icon: 'fas fa-calendar-alt' },
+  ],
+  'Administrativo': [
+     { to: '/dashboard', label: 'Administracion', icon: 'fas fa-file-invoice' },
+  ]
+};
 
-    return (
-        <div id="wrapper">
-            <ul className="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
-                <NavLink className="sidebar-brand d-flex align-items-center justify-content-center" to="/dashboard">
-                    <div className="sidebar-brand-icon rotate-n-15">
-                        <i className="fas fa-truck"></i>
-                    </div>
-                    <div className="sidebar-brand-text mx-3">PepsiCo Taller</div>
-                </NavLink>
+// Componente Sidebar separado para mayor claridad
+const Sidebar = () => {
+  const { user, logout } = useUserStore();
+  const navigate = useNavigate();
 
-                <hr className="sidebar-divider my-0" />
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
 
-                <li className="nav-item">
-                    <NavLink className="nav-link" to="/dashboard">
-                        <i className="fas fa-fw fa-home"></i>
-                        <span>Inicio</span>
-                    </NavLink>
-                </li>
-                
-                <li className="nav-item">
-                    <NavLink className="nav-link" to="/profile">
-                        <i className="fas fa-fw fa-user"></i>
-                        <span>Mi Perfil</span>
-                    </NavLink>
-                </li>
+  const userLinks = navLinksByRole[user?.rol] || [];
+  const commonLinks = [{ to: '/profile', label: 'Mi Perfil', icon: 'fas fa-user' }];
+  
+  return (
+    <aside className={styles.sidebar}>
+      <NavLink to="/dashboard" className={styles.sidebarBrand}>
+        <i className="fas fa-truck"></i>
+        <span>PepsiCo Taller</span>
+      </NavLink>
 
-                <hr className="sidebar-divider" />
+      <nav className={styles.sidebarNav}>
+        {/* Renderiza los enlaces según el rol */}
+        {userLinks.map(link => (
+          <NavLink
+            key={link.to}
+            to={link.to}
+            className={({ isActive }) => `${styles.navLink} ${isActive ? styles.activeLink : ''}`}
+          >
+            <i className={link.icon}></i>
+            <span>{link.label}</span>
+          </NavLink>
+        ))}
+        <hr style={{ borderColor: 'var(--border-color)', margin: '1rem' }} />
+        {/* Renderiza los enlaces comunes a todos */}
+        {commonLinks.map(link => (
+          <NavLink
+            key={link.to}
+            to={link.to}
+            className={({ isActive }) => `${styles.navLink} ${isActive ? styles.activeLink : ''}`}
+          >
+            <i className={link.icon}></i>
+            <span>{link.label}</span>
+          </NavLink>
+        ))}
+      </nav>
 
-                <div className="sidebar-heading">Interfaz</div>
+      <div className={styles.sidebarFooter}>
+        <button onClick={handleLogout} className={styles.logoutButton}>
+          <i className="fas fa-sign-out-alt" style={{marginRight: '8px'}}></i>
+          Cerrar Sesión
+        </button>
+      </div>
+    </aside>
+  );
+};
 
-                <li className="nav-item">
-                    <a 
-                        className={`nav-link ${!isComponentsOpen ? 'collapsed' : ''}`} 
-                        href="#" 
-                        onClick={() => setIsComponentsOpen(!isComponentsOpen)}
-                    >
-                        <i className="fas fa-fw fa-cog"></i>
-                        <span>Componentes</span>
-                    </a>
-                    <div className={`collapse ${isComponentsOpen ? 'show' : ''}`}>
-                        <div className="bg-white py-2 collapse-inner rounded">
-                            <h6 className="collapse-header">Custom Components:</h6>
-                            <NavLink className="collapse-item" to="/buttons">Botones</NavLink>
-                            <NavLink className="collapse-item" to="/cards">Cartas</NavLink>
-                        </div>
-                    </div>
-                </li>
-            </ul>
+// Layout principal que une todo
+export default function MainLayout() {
+  const { user } = useUserStore();
 
-            <div id="content-wrapper" className="d-flex flex-column">
-                <div id="content">
-                    <nav className="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
-                        <span className="ml-4">Bienvenido, {user?.first_name}</span>
-                    </nav>
-
-                    <div className="container-fluid">
-                        {children}
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
+  return (
+    <div className={styles.layoutWrapper}>
+      <Sidebar />
+      <div className={styles.contentWrapper}>
+        <header className={styles.header}>
+          <span className={styles.userInfo}>
+            Bienvenido, <strong>{user?.first_name || user?.username}</strong> ({user?.rol})
+          </span>
+        </header>
+        <main className={styles.mainContent}>
+          {/* Aquí se renderizará tu página (Dashboard, Perfil, etc.) */}
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  );
 }
+
