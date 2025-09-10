@@ -1,8 +1,10 @@
+// src/pages/Login.jsx
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUserStore } from "../store/authStore";
 import apiClient from "../api/axios";
-import styles from "../css/csslogin.module.css";
+import styles from "../css/csslogin.module.css"; // ✅ importado como módulo
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -38,6 +40,7 @@ export default function LoginPage() {
   return (
     <div className={styles.containerFormWrapper}>
       {!showLogin ? (
+        // Pantalla de bienvenida
         <div className={`${styles.containerForm} ${styles.welcomeCard}`}>
           <h2 className={styles.welcomeTitle}>Bienvenido a PepsicoTaller</h2>
           <p className={styles.welcomeSubtitle}>
@@ -52,9 +55,10 @@ export default function LoginPage() {
           </button>
         </div>
       ) : (
+        // Formulario de login
         <form className={`${styles.containerForm} ${styles.formulario}`} onSubmit={handleLogin}>
           <h2 className={styles.createAccount}>Iniciar Sesión</h2>
-          <div className={styles.iconos}></div>
+          <div className={styles.iconos}>{/* iconos opcionales */}</div>
           <p className={styles.cuentaGratis}>Ingrese sus credenciales</p>
 
           <input

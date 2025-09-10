@@ -1,3 +1,4 @@
+// src/components/dashboard/ChoferStatus.jsx
 
 export default function ChoferStatus() {
   return (

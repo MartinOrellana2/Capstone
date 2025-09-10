@@ -1,18 +1,28 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import apiClient from '../api/axios';
+import { Link } from 'react-router-dom';
+import apiClient from '../api/axios.js';
+import styles from '../css/profilepage.module.css'; // ¡Importamos nuestro nuevo CSS!
+
+// Importamos iconos de Lucide para un look más moderno
+import { UserCircle2, KeyRound, Save, XCircle, Loader2 } from 'lucide-react';
+
+// Pequeño componente para el spinner de carga
+const LoadingSpinner = () => (
+  <div className={styles.loadingSpinner}>
+    <Loader2 className="animate-spin" size={32} />
+    <span className="ml-4">Cargando perfil...</span>
+  </div>
+);
 
 export default function ProfilePage() {
   const [userProfile, setUserProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [changePasswordError, setChangePasswordError] = useState('');
-
+  
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [message, setMessage] = useState('');
-  
-  const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState({ message: '', type: '' });
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -30,119 +40,101 @@ export default function ProfilePage() {
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
-    setChangePasswordError('');
-    setMessage('');
+    setFeedback({ message: '', type: '' });
+
     if (newPassword.length < 8) {
-      setChangePasswordError('La nueva contraseña debe tener al menos 8 caracteres.');
+      setFeedback({ message: 'La nueva contraseña debe tener al menos 8 caracteres.', type: 'error' });
       return;
     }
+    
+    setIsSubmitting(true);
     try {
       const response = await apiClient.post('/users/me/change-password/', {
         old_password: oldPassword,
         new_password: newPassword,
       });
-      setMessage(response.data.message + " Redirigiendo al dashboard...");
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 2000);
+      setFeedback({ message: response.data.message, type: 'success' });
+      setOldPassword('');
+      setNewPassword('');
     } catch (err) {
       const errorData = err.response?.data?.error;
-      if (Array.isArray(errorData)) {
-        setChangePasswordError(errorData.join(" "));
-      } else {
-        setChangePasswordError(errorData || 'Ocurrió un error al cambiar la contraseña.');
-      }
+      const errorMessage = Array.isArray(errorData) ? errorData.join(" ") : errorData || 'Ocurrió un error inesperado.';
+      setFeedback({ message: errorMessage, type: 'error' });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  if (isLoading) {
-    return <p className="text-white text-center p-8">Cargando perfil...</p>;
-  }
+  if (isLoading) return <LoadingSpinner />;
+  
   if (error) {
-    return <p className="text-red-500 text-center p-8">{error}</p>;
+    return <p className={`${styles.message} ${styles.errorMessage}`}>{error}</p>;
   }
 
   return (
-    <div className="p-4 md:p-8 text-white max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Mi Perfil</h1>
+    <div className={styles.pageWrapper}>
+      <header className={styles.header}>
+        <UserCircle2 size={40} strokeWidth={1.5} />
+        <h1>Mi Perfil</h1>
+      </header>
       
       {/* Sección de Datos del Usuario */}
       {userProfile && (
-        <div className="bg-gray-800 p-6 rounded-lg mb-8 shadow-lg">
-          <h2 className="text-xl font-semibold mb-4 text-cyan-400">Información de la Cuenta</h2>
-          <div className="space-y-2">
-            <p><strong>Nombre de Usuario:</strong> {userProfile.username}</p>
-            <p><strong>Nombre:</strong> {userProfile.first_name} {userProfile.last_name}</p>
-            <p><strong>Email:</strong> {userProfile.email}</p>
-            <p><strong>Rol:</strong> {userProfile.rol}</p>
+        <section className={styles.card}>
+          <h2 className={styles.cardTitle}>
+            <UserCircle2 size={24} />
+            Información de la Cuenta
+          </h2>
+          <div className={styles.infoGrid}>
+            <p className={styles.infoItem}><strong>Usuario:</strong> <span>{userProfile.username}</span></p>
+            <p className={styles.infoItem}><strong>Nombre:</strong> <span>{userProfile.first_name} {userProfile.last_name}</span></p>
+            <p className={styles.infoItem}><strong>Email:</strong> <span>{userProfile.email}</span></p>
+            <p className={styles.infoItem}><strong>Rol:</strong> <span>{userProfile.rol}</span></p>
           </div>
-        </div>
+        </section>
       )}
 
       {/* Sección para Cambiar Contraseña */}
-      <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-        <h2 className="text-xl font-semibold mb-4 text-cyan-400">Cambiar Contraseña</h2>
-        <form onSubmit={handleChangePassword} className="space-y-4">
-          <div>
-            <label htmlFor="old_pass" className="block text-sm font-medium">Contraseña Actual</label>
+      <section className={styles.card}>
+        <h2 className={styles.cardTitle}>
+          <KeyRound size={24} />
+          Cambiar Contraseña
+        </h2>
+        <form onSubmit={handleChangePassword} className={styles.form}>
+          <div className={styles.formGroup}>
+            <label htmlFor="old_pass">Contraseña Actual</label>
             <input
-              id="old_pass"
-              type="password"
-              value={oldPassword}
+              id="old_pass" type="password" value={oldPassword}
               onChange={(e) => setOldPassword(e.target.value)}
-              className="w-full p-2 bg-gray-700 rounded mt-1 border border-gray-600 focus:ring-cyan-500 focus:border-cyan-500"
-              required
+              className={styles.input} required
             />
           </div>
-          <div>
-            <label htmlFor="new_pass" className="block text-sm font-medium">Nueva Contraseña</label>
+          <div className={styles.formGroup}>
+            <label htmlFor="new_pass">Nueva Contraseña</label>
             <input
-              id="new_pass"
-              type="password"
-              value={newPassword}
+              id="new_pass" type="password" value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full p-2 bg-gray-700 rounded mt-1 border border-gray-600 focus:ring-cyan-500 focus:border-cyan-500"
-              placeholder="Mínimo 8 caracteres"
-              required
+              className={styles.input} placeholder="Mínimo 8 caracteres" required
             />
           </div>
-          {changePasswordError && <p className="text-red-500 text-sm">{changePasswordError}</p>}
-          {message && <p className="text-green-500 text-sm">{message}</p>}
           
-          {/* CONTENEDOR CON LOS BOTONES Y ESTILOS EN LÍNEA, IGUAL QUE EL DASHBOARD */}
-          <div className="flex items-center space-x-4 pt-2">
-            <button 
-              type="submit"
-              style={{
-                padding: "10px 20px",
-                fontSize: "1rem",
-                color: "#fff",
-                backgroundColor: "#007bff", 
-                border: "none",
-                borderRadius: "5px",
-                cursor: "pointer",
-              }}
-            >
-              Actualizar Contraseña
+          {feedback.message && (
+            <div className={`${styles.message} ${feedback.type === 'success' ? styles.successMessage : styles.errorMessage}`}>
+              {feedback.message}
+            </div>
+          )}
+
+          <div className={styles.buttonGroup}>
+            <button type="submit" className={`${styles.button} ${styles.buttonPrimary}`} disabled={isSubmitting}>
+              {isSubmitting ? <><Loader2 className="animate-spin mr-2" size={20} /> Actualizando...</> : <><Save size={20} className="mr-2"/> Actualizar Contraseña</>}
             </button>
-            <Link 
-              to="/dashboard"
-              style={{
-                padding: "10px 20px",
-                fontSize: "1rem",
-                color: "#fff",
-                backgroundColor: "#dc3545",
-                border: "none",
-                borderRadius: "5px",
-                cursor: "pointer",
-                textDecoration: "none",
-              }}
-            >
-              Volver
+            <Link to="/dashboard" className={`${styles.button} ${styles.buttonSecondary}`}>
+              <XCircle size={20} className="mr-2"/> Volver
             </Link>
           </div>
         </form>
-      </div>
+      </section>
     </div>
   );
 }
+
