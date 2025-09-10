@@ -40,7 +40,19 @@ class Vehiculo(models.Model):
     color = models.CharField(max_length=30, blank=True, null=True)
     vin = models.CharField("VIN", max_length=50, unique=True, blank=True, null=True)
     kilometraje = models.IntegerField(blank=True, null=True)
+
+    chofer = models.ForeignKey(
+        'Usuario',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='vehiculos',
+        limit_choices_to={'groups__name': 'Chofer'}
+    )
+
     def __str__(self):
+        if self.chofer:
+            return f"{self.patente} - {self.marca} {self.modelo} ({self.chofer.first_name})"
         return f"{self.patente} - {self.marca} {self.modelo}"
 
 class Agendamiento(models.Model):

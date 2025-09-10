@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-// Se corrigen las rutas para que sean absolutas desde la raíz del proyecto
 import apiClient from '/src/api/axios.js';
 import styles from '/src/css/creareditarvehiculo.module.css';
 
 export default function CrearEditarVehiculo() {
-  const { patente } = useParams(); // La patente es la clave primaria
+  const { patente } = useParams();
   const navigate = useNavigate();
   const isEditMode = Boolean(patente);
 
@@ -16,24 +15,43 @@ export default function CrearEditarVehiculo() {
     anio: '',
     kilometraje: '',
     color: '',
-    vin: ''
+    vin: '',
+    chofer: null // ID del chofer
   });
+  const [choferes, setChoferes] = useState([]);
   const [isLoading, setIsLoading] = useState(isEditMode);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (isEditMode) {
-      apiClient.get(`/vehiculos/${patente}/`)
-        .then(response => {
-          setVehiculoData(response.data);
-          setIsLoading(false);
-        })
-        .catch(err => {
-          setError('No se pudo cargar la información del vehículo.');
-          setIsLoading(false);
+  // Cargar datos del vehículo si es edición
+// Cargar datos del vehículo si es edición
+useEffect(() => {
+  if (isEditMode) {
+    apiClient.get(`/vehiculos/${patente}/`)
+      .then(res => {
+        setVehiculoData({
+          ...res.data,
+          chofer: res.data.chofer?.id || null
         });
-    }
-  }, [patente, isEditMode]);
+        setIsLoading(false);
+      })
+      .catch(() => {
+        setError('No se pudo cargar la información del vehículo.');
+        setIsLoading(false);
+      });
+  }
+}, [patente, isEditMode]);
+
+// Cargar choferes disponibles
+useEffect(() => {
+  apiClient.get('/choferes/') // <- Cambiado aquí
+    .then(res => {
+      setChoferes(res.data); // Asume que tu endpoint ya devuelve solo los choferes
+    })
+    .catch(() => {
+      setError('No se pudieron cargar los choferes disponibles.');
+    });
+}, []);
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -44,10 +62,9 @@ export default function CrearEditarVehiculo() {
     e.preventDefault();
     setError(null);
 
-    // Validación simple de año y kilometraje
     if (isNaN(vehiculoData.anio) || isNaN(vehiculoData.kilometraje)) {
-        setError("El año y el kilometraje deben ser números.");
-        return;
+      setError("El año y el kilometraje deben ser números.");
+      return;
     }
 
     try {
@@ -67,7 +84,7 @@ export default function CrearEditarVehiculo() {
       }
     }
   };
-  
+
   if (isLoading) return <div>Cargando...</div>;
 
   return (
@@ -108,8 +125,19 @@ export default function CrearEditarVehiculo() {
               <label htmlFor="vin">VIN (Número de Chasis)</label>
               <input type="text" name="vin" id="vin" value={vehiculoData.vin} onChange={handleChange} />
             </div>
+            <div className={styles.formField}>
+              <label htmlFor="chofer">Chofer a cargo</label>
+              <select name="chofer" id="chofer" value={vehiculoData.chofer || ''} onChange={handleChange}>
+                <option value="">Sin asignar</option>
+                {choferes.map(c => (
+                  <option key={c.id} value={c.id}>{c.first_name} {c.last_name}</option>
+                ))}
+              </select>
+            </div>
           </div>
+
           {error && <p style={{ color: 'red', marginTop: '1rem' }}>{error}</p>}
+
           <div className={styles.formActions}>
             <button type="button" className={styles.cancelButton} onClick={() => navigate('/vehiculos')}>Cancelar</button>
             <button type="submit" className={styles.submitButton}>Guardar Vehículo</button>
@@ -119,4 +147,3 @@ export default function CrearEditarVehiculo() {
     </div>
   );
 }
-

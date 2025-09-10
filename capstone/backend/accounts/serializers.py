@@ -2,9 +2,14 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model, authenticate
 from django.contrib.auth.models import Group
 from django.contrib.auth.password_validation import validate_password
+from datetime import timedelta
+from .models import Vehiculo, Agendamiento
 
 User = get_user_model()
 
+# ----------------------------------------------------------------------
+# SERIALIZERS DE USUARIOS
+# ----------------------------------------------------------------------
 class UserSerializer(serializers.ModelSerializer):
     """
     Serializador para LEER la información de los usuarios.
@@ -39,7 +44,7 @@ class UserCreateUpdateSerializer(serializers.ModelSerializer):
 
     def validate_password(self, value):
         """Valida la contraseña con las reglas de Django (mínimo, comunes, etc.)."""
-        if value:  # Solo si viene password
+        if value:
             validate_password(value)
         return value
 
@@ -106,80 +111,50 @@ class ChangePasswordSerializer(serializers.Serializer):
         return value
 
 
-
-from .models import Vehiculo
+# ----------------------------------------------------------------------
+# SERIALIZERS DE VEHÍCULOS
+# ----------------------------------------------------------------------
 
 class VehiculoSerializer(serializers.ModelSerializer):
-    """
-    Serializador para el modelo Vehiculo.
-    Convierte los datos del vehículo a formato JSON para la API.
-    """
+    chofer_nombre = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = Vehiculo
-        fields = '__all__' # Incluye todos los campos del modelo
+        fields = '__all__'  # O lista explícita de campos
+        # fields = ['patente', 'marca', 'modelo', 'anio', 'color', 'vin', 'kilometraje', 'chofer', 'chofer_nombre']
+
+    def get_chofer_nombre(self, obj):
+        if obj.chofer:
+            return f"{obj.chofer.first_name} {obj.chofer.last_name}"
+        return "Sin asignar"
 
 
-from rest_framework import serializers
-from django.contrib.auth import get_user_model, authenticate
-from django.contrib.auth.models import Group
-# 👇 Se importa timedelta para cálculos de tiempo
-from datetime import timedelta
-
-# 👇 Se importa el modelo Agendamiento
-from .models import Vehiculo, Agendamiento 
-
-User = get_user_model()
-
-
-
-# --- 👇 AÑADE ESTOS NUEVOS SERIALIZERS AL FINAL DEL ARCHIVO ---
-
-
+# ----------------------------------------------------------------------
+# SERIALIZERS DE AGENDAMIENTOS
+# ----------------------------------------------------------------------
 class AgendamientoSerializer(serializers.ModelSerializer):
-    """
-    Serializador para crear y mostrar agendamientos.
-    Incluye la validación anti-solapamiento.
-    """
-    # Para mostrar la patente en la lectura de datos
     vehiculo_patente = serializers.CharField(source='vehiculo.patente', read_only=True)
+    chofer_nombre = serializers.CharField(source='chofer_asociado.get_full_name', read_only=True)
     
+    # Campo vehiculo editable con queryset dinámico
+    vehiculo = serializers.PrimaryKeyRelatedField(queryset=Vehiculo.objects.none())
+
     class Meta:
         model = Agendamiento
         fields = [
-            'id', 'vehiculo', 'vehiculo_patente', 'chofer_asociado', 
+            'id', 'vehiculo', 'vehiculo_patente', 'chofer_asociado', 'chofer_nombre',
             'fecha_hora_programada', 'duracion_estimada_minutos', 
             'motivo_ingreso', 'estado', 'creado_por'
         ]
-        # Hacemos que creado_por sea de solo lectura para que se asigne automáticamente
         read_only_fields = ['creado_por']
 
-    def validate(self, data):
-        """
-        Validación personalizada para evitar solapamiento de citas.
-        """
-        start_time = data.get('fecha_hora_programada')
-        duration = data.get('duracion_estimada_minutos', 60) # Default 60 mins
-        end_time = start_time + timedelta(minutes=duration)
-        vehiculo = data.get('vehiculo')
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        user = self.context['request'].user
 
-        # Buscamos citas existentes para el mismo vehículo que se solapen
-        solapamientos = Agendamiento.objects.filter(
-            vehiculo=vehiculo,
-            fecha_hora_programada__lt=end_time, # Una cita existente que empieza ANTES de que la nueva TERMINE
-            # Y cuya hora de fin es DESPUÉS de que la nueva EMPIECE
-        ).exclude(
-            # Si estamos actualizando, excluimos la propia cita de la comprobación
-            pk=self.instance.pk if self.instance else None
-        )
-        
-        # Para calcular la hora de fin de las citas existentes, lo hacemos en Python
-        for cita in solapamientos:
-            cita_end_time = cita.fecha_hora_programada + timedelta(minutes=cita.duracion_estimada_minutos)
-            if cita_end_time > start_time:
-                raise serializers.ValidationError(
-                    f"Conflicto de horario. Ya existe una cita para el vehículo {vehiculo.patente} de "
-                    f"{cita.fecha_hora_programada.strftime('%H:%M')} a {cita_end_time.strftime('%H:%M')}."
-                )
-
-        return data
-
+        # Si el usuario es chofer, solo verá sus vehículos
+        if user.groups.filter(name='Chofer').exists():
+            self.fields['vehiculo'].queryset = user.vehiculos.all()
+        else:
+            # Supervisores y mecánicos ven todos los vehículos
+            self.fields['vehiculo'].queryset = Vehiculo.objects.all()

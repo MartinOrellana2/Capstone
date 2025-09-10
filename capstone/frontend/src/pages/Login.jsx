@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUserStore } from "../store/authStore";
 import apiClient from "../api/axios";
-import styles from "../css/csslogin.module.css"; // ✅ importado como módulo
+import styles from "../css/csslogin.module.css";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -13,6 +13,21 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [showLogin, setShowLogin] = useState(false);
+
+  // Función para refrescar token
+  const refreshToken = async () => {
+    try {
+      const res = await apiClient.post("/token/refresh/", {
+        refresh: localStorage.getItem("refresh_token"),
+      });
+      localStorage.setItem("access_token", res.data.access);
+      apiClient.defaults.headers["Authorization"] = `Bearer ${res.data.access}`;
+    } catch (err) {
+      console.log("No se pudo refrescar el token", err);
+      // Redirigir al login si falla
+      window.location.href = "/login";
+    }
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -25,10 +40,23 @@ export default function LoginPage() {
 
     try {
       const res = await apiClient.post("/login/", { username, password });
+
+      // Guardar tokens en localStorage
+      localStorage.setItem("access_token", res.data.access);
+      localStorage.setItem("refresh_token", res.data.refresh);
+
+      // Configurar Axios para usar el access token
+      apiClient.defaults.headers["Authorization"] = `Bearer ${res.data.access}`;
+
+      // Opcional: refrescar token cada 25 minutos
+      setInterval(refreshToken, 25 * 60 * 1000);
+
+      // Guardar usuario en tu store
       setAuth({
         user: res.data.user,
         token: res.data.access,
       });
+
       navigate("/dashboard");
     } catch (err) {
       const errorMessage =
@@ -40,7 +68,6 @@ export default function LoginPage() {
   return (
     <div className={styles.containerFormWrapper}>
       {!showLogin ? (
-        // Pantalla de bienvenida
         <div className={`${styles.containerForm} ${styles.welcomeCard}`}>
           <h2 className={styles.welcomeTitle}>Bienvenido a PepsicoTaller</h2>
           <p className={styles.welcomeSubtitle}>
@@ -55,10 +82,11 @@ export default function LoginPage() {
           </button>
         </div>
       ) : (
-        // Formulario de login
-        <form className={`${styles.containerForm} ${styles.formulario}`} onSubmit={handleLogin}>
+        <form
+          className={`${styles.containerForm} ${styles.formulario}`}
+          onSubmit={handleLogin}
+        >
           <h2 className={styles.createAccount}>Iniciar Sesión</h2>
-          <div className={styles.iconos}>{/* iconos opcionales */}</div>
           <p className={styles.cuentaGratis}>Ingrese sus credenciales</p>
 
           <input
@@ -76,9 +104,7 @@ export default function LoginPage() {
             className={styles.formularioInput}
           />
 
-          {error && (
-            <p style={{ color: "red", marginTop: "1rem" }}>{error}</p>
-          )}
+          {error && <p style={{ color: "red", marginTop: "1rem" }}>{error}</p>}
 
           <button type="submit" className={styles.slideButton}>
             <span className={styles.slideContent}>

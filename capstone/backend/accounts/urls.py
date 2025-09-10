@@ -14,7 +14,9 @@ from .views import (
     UserCreateAPIView,
     UserRetrieveUpdateAPIView,
     supervisor_dashboard_stats,
-    VehiculoViewSet # 👈 Importa el nuevo ViewSet para vehículos
+    VehiculoViewSet,
+    AgendamientoViewSet,
+    ChoferListView
 )
 
 # --- Se crea un router para las vistas basadas en ViewSet ---
@@ -26,7 +28,7 @@ from .views import (
 # - DELETE /api/v1/vehiculos/{patente}/ (eliminar uno)
 router = DefaultRouter()
 router.register(r'vehiculos', VehiculoViewSet, basename='vehiculo')
-
+router.register(r'agendamientos', AgendamientoViewSet, basename='agendamiento')
 # --- Lista de URLs de la aplicación ---
 urlpatterns = [
     # Rutas que ya tenías (autenticación, usuarios, dashboard)
@@ -43,4 +45,5 @@ urlpatterns = [
 
     # 👇 Se añade esta línea para incluir todas las URLs del router
     path('', include(router.urls)),
+    path('choferes/', ChoferListView.as_view(), name='chofer-list'),
 ]

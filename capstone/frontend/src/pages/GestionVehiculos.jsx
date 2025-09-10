@@ -106,38 +106,39 @@ export default function GestionVehiculos() {
         </div>
         <div className={styles.tableContainer}>
           <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Patente</th>
-                <th>Marca</th>
-                <th>Modelo</th>
-                <th>Año</th>
-                <th>Kilometraje</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentItems.length > 0 ? currentItems.map(vehiculo => (
-                <tr key={vehiculo.patente}>
-                  <td>{vehiculo.patente}</td>
-                  <td>{vehiculo.marca}</td>
-                  <td>{vehiculo.modelo}</td>
-                  <td>{vehiculo.anio}</td>
-                  <td>{vehiculo.kilometraje ? `${vehiculo.kilometraje.toLocaleString('es-CL')} km` : 'N/A'}</td>
-                  <td>
-                    <div className={styles.actionButtons}>
-                      {/* Se conectan los botones a las nuevas funciones */}
-                      <button onClick={() => navigate(`/vehiculos/editar/${vehiculo.patente}`)}><Edit size={16} /></button>
-                      <button onClick={() => openDeleteModal(vehiculo)}><Trash2 size={16} /></button>
-                    </div>
-                  </td>
-                </tr>
-              )) : (
-                <tr>
-                  <td colSpan="6" className={styles.noResults}>No se encontraron vehículos.</td>
-                </tr>
-              )}
-            </tbody>
+        <thead>
+          <tr>
+            <th>Patente</th>
+            <th>Marca</th>
+            <th>Modelo</th>
+            <th>Año</th>
+            <th>Chofer a cargo</th>  {/* Cambié la cabecera */}
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+        {currentItems.length > 0 ? currentItems.map(vehiculo => (
+          <tr key={vehiculo.patente}>
+            <td>{vehiculo.patente}</td>
+            <td>{vehiculo.marca}</td>
+            <td>{vehiculo.modelo}</td>
+            <td>{vehiculo.anio}</td>
+            <td>{vehiculo.chofer_nombre}</td> {/* Aquí usamos el campo del serializer */}
+            <td>
+              <div className={styles.actionButtons}>
+                <button onClick={() => navigate(`/vehiculos/editar/${vehiculo.patente}`)}><Edit size={16} /></button>
+                <button onClick={() => openDeleteModal(vehiculo)}><Trash2 size={16} /></button>
+              </div>
+            </td>
+          </tr>
+        )) : (
+          <tr>
+            <td colSpan="6" className={styles.noResults}>No se encontraron vehículos.</td>
+          </tr>
+        )}
+      </tbody>
+
+
           </table>
         </div>
         <div className={styles.pagination}>
