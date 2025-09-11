@@ -5,36 +5,36 @@ from .models import (
     OrdenDocumento, OrdenHistorialEstado, OrdenItem,
     Producto, Servicio
 )
+from .forms import UsuarioCreationForm
 # El formulario UsuarioCreationForm probablemente ya no es necesario
 # si no tienes campos personalizados complejos al crear un usuario.
 # Si sigue siendo necesario, asegúrate de que no haga referencia a 'rol'.
 
 @admin.register(Usuario)
 class UsuarioAdmin(UserAdmin):
-    # Ya no se necesita el add_form si no tienes campos complejos
+    add_form = UsuarioCreationForm  # <- formulario de creación personalizado
     model = Usuario
-    # Se elimina 'rol' y se añade un método para mostrar el grupo
+
+    # Campos que verá al crear un usuario rut obligatorio
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('username', 'rut', 'password1', 'password2', 'first_name', 'last_name', 'email', 'telefono', 'groups', 'is_active', 'is_staff')
+        }),
+    )
+
     list_display = ('username', 'get_rol', 'email', 'first_name', 'last_name', 'is_staff')
-    
-    # Se elimina 'rol' de los fieldsets
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
         ('Información personal', {'fields': ('first_name', 'last_name', 'email', 'rut', 'telefono')}),
-        # La gestión de roles se hace aquí, a través de los grupos
         ('Permisos', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
         ('Fechas importantes', {'fields': ('last_login', 'date_joined')}),
     )
-    
-    list_filter = ('groups', 'is_staff', 'is_superuser', 'is_active')
-    search_fields = ('username', 'first_name', 'last_name', 'email')
 
-    # Método para mostrar el primer grupo del usuario en el listado
     @admin.display(description='Rol (Grupo)')
     def get_rol(self, obj):
         return obj.groups.first().name if obj.groups.exists() else 'Sin Rol'
 
-# El admin para Rol se elimina porque el modelo ya no existe
-# @admin.register(Rol) ... -> ELIMINADO
 
 @admin.register(Vehiculo)
 class VehiculoAdmin(admin.ModelAdmin):

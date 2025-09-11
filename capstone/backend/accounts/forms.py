@@ -1,14 +1,10 @@
-# accounts/forms.py
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from .models import Usuario
 
 class UsuarioCreationForm(UserCreationForm):
-    """
-    Formulario para crear nuevos usuarios en el panel de administración.
-    Actualizado para no incluir el campo 'rol'.
-    """
+    rut = forms.CharField(max_length=12, required=True, help_text="Ej: 12345678-9")
+
     class Meta:
         model = Usuario
-        # Se elimina el campo 'rol' porque ahora se gestiona con Grupos de Django.
-        fields = ('username', 'first_name', 'last_name', 'email', 'rut', 'telefono')
+        fields = ('username', 'rut', 'password1', 'password2', 'first_name', 'last_name', 'email', 'telefono')
