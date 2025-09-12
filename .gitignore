@@ -1,0 +1,22 @@
+# Entorno virtual
+venv/
+.env
+
+# Archivos Python
+*.pyc
+__pycache__/
+
+# Archivos Node/React
+node_modules/
+build/
+
+# Archivos estáticos de Django
+/staticfiles
+
+# Logs
+*.log
+
+# Mac / IDE
+.DS_Store
+.vscode/
+.idea/
