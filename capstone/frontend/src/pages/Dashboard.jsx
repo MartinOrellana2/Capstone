@@ -25,7 +25,7 @@ export default function Dashboard() {
     switch (user.rol) {
       case 'Supervisor':
         return <SupervisorWidgets />;
-      case 'Mecanico':
+      case 'mecanico':
         return <MecanicoTaskList />;
       case 'Chofer':
         return <ChoferStatus />;
